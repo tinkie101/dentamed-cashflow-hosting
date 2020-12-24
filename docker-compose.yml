@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  cashflow-mysql:
+    image: mysql:latest
+    container_name: cashflow-mysql
+    environment:
+      - MYSQL_DATABASE=cashflow
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 2s
+      retries: 5
+
+  cashflow-docx:
+    image: cashflow-docx-image:latest
+    container_name: cashflow-docx
+
+  cashflow-odata:
+    image: cashflow-odata-image:latest
+    container_name: cashflow-odata
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on: 
+      cashflow-docx:
+        condition: service_started
+      cashflow-mysql:
+        condition: service_healthy
+
+  cashflow-ui5:
+    image: cashflow-ui5-image:latest
+    container_name: cashflow-ui5
+    ports:
+      - "8091:80"
+    depends_on: 
+      - cashflow-odata
