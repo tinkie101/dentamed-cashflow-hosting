@@ -1,54 +1,44 @@
-version: "3.9"
+version: "3.3"
 services:
   cashflow-keycloak:
-    image: jboss/keycloak:latest
+    image: jboss/keycloak:12.01
     container_name: cashflow-keycloak
-    environment: 
-      - PROXY_ADRESS_FORWARDING=true
     env_file: .env
-    ports: 
-      - 8092:8080
+    volumes:
+      - ./keycloak:/keycloak/imports
 
   cashflow-mysql:
-    image: mysql:latest
+    image: mysql:8.0.21
     container_name: cashflow-mysql
-    environment:
-      - MYSQL_DATABASE=cashflow
     env_file:
       - .env
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 2s
-      retries: 5
 
   cashflow-docx:
-    image: cashflow-docx-image:latest
+    image: cashflow-docx-image:1
     container_name: cashflow-docx
 
   cashflow-odata:
-    image: cashflow-odata-image:latest
+    image: cashflow-odata-image:1
     container_name: cashflow-odata
-    env_file:
-      - .env
-    depends_on: 
-      cashflow-docx:
-        condition: service_started
-      cashflow-mysql:
-        condition: service_healthy
+    env_file: .env
+    depends_on:
+      - cashflow-docx
+      - cashflow-mysql
 
   cashflow-ui5:
-    image: cashflow-ui5-image:latest
+    image: cashflow-ui5-image:1
     container_name: cashflow-ui5
-    depends_on: 
+    depends_on:
       - cashflow-odata
 
   cashflow-nginx:
-    image: cashflow-nginx-image
+    image: cashflow-hosting-image:2
     container_name: cashflow-nginx
     ports:
+      - 443:443
       - 80:80
-    volumes: 
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on: 
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+    depends_on:
       - cashflow-keycloak
       - cashflow-ui5
